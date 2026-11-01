@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { logger } from "../lib/logger.js";
 
 const MIGRATIONS_FOLDER = new URL("../../drizzle", import.meta.url).pathname;
 
@@ -16,5 +17,6 @@ export const runMigrations = async (databaseUrl: string) => {
 if (import.meta.main) {
   const { env } = await import("../config/base-env.js");
   await runMigrations(env.DATABASE_URL);
-  console.log("migrations run successfully");
+
+  logger.info("migrations run successfully");
 }

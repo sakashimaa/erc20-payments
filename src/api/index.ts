@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { env } from "../config/api-env";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 const app = new Hono();
 app.get("/health", async (c) => {
@@ -9,7 +10,8 @@ app.get("/health", async (c) => {
     await db.execute(sql`SELECT 1`);
     return c.json({ status: "healthy" }, 200);
   } catch (err) {
-    console.error("unhealhy db", err);
+    logger.error({ err }, "unhealhy db");
+
     return c.json({ status: "unhealthy", message: "db is not available" }, 500);
   }
 });

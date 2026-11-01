@@ -1,5 +1,6 @@
 import z from "zod";
 import { fromError } from "zod-validation-error";
+import { logger } from "../lib/logger";
 
 export const baseEnvSchema = z.object({
   NODE_ENV: z
