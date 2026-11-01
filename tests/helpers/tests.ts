@@ -14,7 +14,7 @@ const findPgError = (err: unknown) => {
 export const expectPgError = async (
   action: () => Promise<unknown>,
   pgErrCode: string,
-  pgConstraintName: string,
+  pgConstraintName?: string,
 ) => {
   try {
     await action();
@@ -23,7 +23,7 @@ export const expectPgError = async (
 
     if (!pgErr) throw new Error("expected pg error", { cause: err });
     expect(pgErr.code).toBe(pgErrCode);
-    expect(pgErr.constraint_name).toBe(pgConstraintName);
+    if (pgConstraintName) expect(pgErr.constraint_name).toBe(pgConstraintName);
 
     return;
   }
