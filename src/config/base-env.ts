@@ -11,6 +11,8 @@ export const baseEnvSchema = z.object({
   POSTGRES_DB: z.string().min(1),
   POSTGRES_HOST: z.string().default("localhost"),
   POSTGRES_PORT: z.coerce.number().default(5433),
+
+  DATA_ENC_KEY: z.string().min(1),
 });
 
 type BaseEnv = z.infer<typeof baseEnvSchema>;
