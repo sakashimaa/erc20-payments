@@ -9,7 +9,6 @@ import {
 } from "../../src/db/schema";
 import { db } from "../../src/db";
 import { TEST_CHAIN_ID, TEST_TOKEN_ADDRESS } from "../fixtures/chain";
-import crypto from "node:crypto";
 
 let derivationCounter = 0;
 
