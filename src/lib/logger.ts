@@ -4,7 +4,7 @@ import { env } from "../config/base-env";
 const isProd = env.NODE_ENV === "production";
 
 const logger = pino({
-  level: env.LOG_LEVEL,
+  level: env.NODE_ENV === "test" ? "silent" : env.LOG_LEVEL,
   formatters: {
     level: (label) => ({ level: label }),
   },
