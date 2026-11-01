@@ -1,6 +1,5 @@
 import z from "zod";
 import { fromError } from "zod-validation-error";
-import "dotenv/config";
 
 export const baseEnvSchema = z.object({
   NODE_ENV: z

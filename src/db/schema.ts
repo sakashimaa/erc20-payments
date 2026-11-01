@@ -190,3 +190,7 @@ export const webhookEvents = pgTable(
       .where(sql`${t.status} = 'pending'`),
   ],
 );
+
+export type InsertMerchant = typeof merchants.$inferInsert;
+export type InsertInvoice = typeof invoices.$inferInsert;
+export type InsertTransfer = typeof transfers.$inferInsert;

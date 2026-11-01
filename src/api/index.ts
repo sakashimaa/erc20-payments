@@ -9,6 +9,7 @@ app.get("/health", async (c) => {
     await db.execute(sql`SELECT 1`);
     return c.json({ status: "healthy" }, 200);
   } catch (err) {
+    console.error("unhealhy db", err);
     return c.json({ status: "unhealthy", message: "db is not available" }, 500);
   }
 });
