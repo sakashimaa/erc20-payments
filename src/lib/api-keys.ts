@@ -1,6 +1,7 @@
 export const API_KEY_PREFIX = "sk_live_";
 export const API_KEY_PREFIX_BYTES = 8;
 export const API_KEY_SECRET_BYTES = 32;
+
 export const API_KEY_RE = new RegExp(
   `^${API_KEY_PREFIX}([0-9a-f]{${API_KEY_PREFIX_BYTES * 2}})_([0-9a-f]{${API_KEY_SECRET_BYTES * 2}})$`,
 );
@@ -38,6 +39,12 @@ export const parseApiKey = (raw: string) => {
 
   return { prefix, secret };
 };
+
+export const sha256 = (s: string) =>
+  new Bun.CryptoHasher("sha256").update(s).digest();
+
+export const safeEqual = (a: string, b: string) =>
+  crypto.timingSafeEqual(sha256(a), sha256(b));
 
 export const verifyApiKey = async (raw: string, hash: string) => {
   const a = Buffer.from(await hashApiKey(raw), "hex");

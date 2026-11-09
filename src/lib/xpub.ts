@@ -19,7 +19,7 @@ export class XpubValidationError extends Error {
 export const validateMerchantXpub = (
   xpub: string,
   firstAddress: string,
-): void => {
+): HDKey => {
   let hd: HDKey;
   try {
     hd = HDKey.fromExtendedKey(xpub);
@@ -43,4 +43,6 @@ export const validateMerchantXpub = (
 
   if (deriveAddress(xpub, 0) !== firstAddress.toLowerCase())
     throw new XpubValidationError("first address mismatch", "address_mismatch");
+
+  return hd;
 };

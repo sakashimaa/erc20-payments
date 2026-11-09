@@ -16,10 +16,8 @@ const adminUrl = new URL(url);
 adminUrl.pathname = "/postgres";
 const admin = postgres(adminUrl.href, { max: 1 });
 
-const [exists] =
-  await admin`SELECT 1 FROM pg_database WHERE datname = ${dbName}`;
-
-if (!exists) await admin.unsafe(`CREATE DATABASE "${dbName}"`);
+await admin.unsafe(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
+await admin.unsafe(`CREATE DATABASE ${dbName}`);
 
 await admin.end();
 

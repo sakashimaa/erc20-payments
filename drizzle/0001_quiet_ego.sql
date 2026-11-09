@@ -1,0 +1,1 @@
+DROP INDEX "idx_merchants_xpub_fingerprint";

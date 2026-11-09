@@ -28,6 +28,9 @@ export const insertMerchant = async (
       webhookUrl: "https://example.com/webhook",
       webhookSecretEnc: Buffer.from(crypto.getRandomValues(new Uint8Array(44))),
       webhookSecretEncVersion: 1,
+      xpubFingerprint: toHex(
+        Buffer.from(crypto.getRandomValues(new Uint8Array(32))),
+      ),
       xpubEnc: Buffer.from(crypto.getRandomValues(new Uint8Array(140))),
       xpubEncVersion: 1,
       ...overrides,
