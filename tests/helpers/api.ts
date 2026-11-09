@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { expect } from "bun:test";
 
 export const post = (
   app: Hono,
@@ -14,3 +15,8 @@ export const post = (
     },
     body: JSON.stringify(body),
   });
+
+export const matchObjectJson = async (res: Response, match: object) => {
+  const json = await res.json();
+  expect(json).toMatchObject(match);
+};
