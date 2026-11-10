@@ -7,7 +7,7 @@ export const createMerchantSchema = ({
   allowInsecureWebhooks: boolean;
 }) =>
   z.object({
-    name: z.string().min(1).max(100).trim(),
+    name: z.string().trim().min(1).max(100),
     webhookUrl: z.url({
       protocol: allowInsecureWebhooks ? /^https?$/ : /^https$/,
       error: allowInsecureWebhooks

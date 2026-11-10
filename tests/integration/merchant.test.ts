@@ -1,12 +1,19 @@
 import { createBase58check } from "@scure/base";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, test } from "bun:test";
 import { mnemonicToSeedSync } from "@scure/bip39";
 import { ANVIL } from "../fixtures/wallets";
 import { HDKey } from "viem/accounts";
 import { createApp } from "../../src/api/app";
 import { createDeps, TEST_ADMIN_TOKEN } from "../helpers/deps";
 import { matchObjectJson, post } from "../helpers/api";
+import { truncateAll } from "../helpers/db";
+import z from "zod";
+import { API_KEY_RE, verifyApiKey } from "../../src/lib/api-keys";
+import { WEBHOOK_SECRET_RE } from "../../src/lib/webhook-secret";
+import { apiKeys, apiKeys, merchants } from "../../src/db/schema";
+import { and, eq, isNull, not } from "drizzle-orm";
+import { aadFor } from "../../src/lib/crypto";
 
 const b58 = createBase58check(sha256);
 const XPUB_BYTES = 78;
@@ -34,6 +41,30 @@ const valid = {
   firstAddress: ANVIL.addresses[0],
 };
 
+const apiKeySchema = z.string().regex(API_KEY_RE, "invalid apiKey format");
+const webhookSecretSchema = z
+  .string()
+  .regex(WEBHOOK_SECRET_RE, "invalid webhookSecret format");
+
+const CreateMerchantResponse = z
+  .object({
+    merchantId: z.uuid(),
+    apiKey: apiKeySchema,
+    webhookSecret: webhookSecretSchema,
+  })
+  .strict();
+
+const RotateMerchantResponse = z
+  .object({
+    apiKey: apiKeySchema,
+    webhookSecret: webhookSecretSchema,
+  })
+  .strict();
+
+beforeEach(async () => {
+  await truncateAll();
+});
+
 describe("POST /merchants validation", () => {
   const app = createApp(createDeps({ allowInsecureWebhooks: true }));
 
@@ -42,6 +73,7 @@ describe("POST /merchants validation", () => {
     ["missing name", { ...valid, name: undefined }, "name"],
     ["bad webhookUrl", { ...valid, webhookUrl: "not-a-url" }, "webhookUrl"],
     ["bad firstAddress", { ...valid, firstAddress: "0x123" }, "firstAddress"],
+    ["spaced name", { ...valid, name: "   " }, "name"],
   ])("POST /merchants %s -> 400", async (_, body, field) => {
     const res = await post(
       app,
@@ -162,7 +194,89 @@ describe("auth on POST /merchants, /:merchantId/rotate", () => {
   });
 });
 
+describe("POST /:merchantId/rotate", () => {
+  test("successful rotation", async () => {
+    const deps = createDeps({ allowInsecureWebhooks: true });
+    const app = createApp(deps);
+
+    const first = await post(
+      app,
+      "/api/merchants",
+      { ...valid },
+      TEST_ADMIN_TOKEN,
+    );
+
+    expect(first.status).toBe(201);
+    const merchant = CreateMerchantResponse.parse(await first.json());
+
+    const second = await post(
+      app,
+      `/api/merchants/${merchant.merchantId}/rotate`,
+      {},
+      TEST_ADMIN_TOKEN,
+    );
+
+    const rotated = RotateMerchantResponse.parse(await second.json());
+
+    expect(merchant.apiKey).not.toBe(rotated.apiKey);
+    expect(merchant.webhookSecret).not.toBe(rotated.webhookSecret);
+
+    const [[merchantDb], [validKey], [revokedKey]] = await Promise.all([
+      deps.db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, merchant.merchantId)),
+      deps.db
+        .select()
+        .from(apiKeys)
+        .where(
+          and(
+            eq(apiKeys.merchantId, merchant.merchantId),
+            isNull(apiKeys.revokedAt),
+          ),
+        ),
+      deps.db
+        .select()
+        .from(apiKeys)
+        .where(
+          and(
+            eq(apiKeys.merchantId, merchant.merchantId),
+            not(isNull(apiKeys.revokedAt)),
+          ),
+        ),
+    ]);
+
+    expect(merchantDb).not.toBeNull();
+    expect(validKey).not.toBeNull();
+
+    expect(
+      await deps.cipher.decrypt(
+        merchantDb!.webhookSecretEnc,
+        aadFor(merchant.merchantId, "webhook_secret"),
+      ),
+    ).toBe(rotated.webhookSecret);
+    expect(await verifyApiKey(rotated.apiKey, validKey!.keyHash));
+    expect(await verifyApiKey(merchant.apiKey, revokedKey!.keyHash));
+  });
+});
+
 describe("POST /merchants", () => {
+  test("successful creation", async () => {
+    const app = createApp(createDeps({ allowInsecureWebhooks: true }));
+
+    const first = await post(
+      app,
+      "/api/merchants",
+      { ...valid },
+      TEST_ADMIN_TOKEN,
+    );
+
+    expect(first.status).toBe(201);
+    expect(first.headers.get("cache-control")).toBe("no-store");
+
+    CreateMerchantResponse.parse(await first.json());
+  });
+
   test("inverted parent still gives same fingerprint and rejects with 409", async () => {
     const app = createApp(createDeps({ allowInsecureWebhooks: true }));
 
