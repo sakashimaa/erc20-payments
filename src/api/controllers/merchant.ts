@@ -46,6 +46,7 @@ export const rotateMerchantSecrets = ({ adminToken, db, cipher }: AppDeps) =>
           .where(
             and(eq(apiKeys.merchantId, merchantId), isNull(apiKeys.revokedAt)),
           );
+
         await tx.insert(apiKeys).values({ merchantId, prefix, keyHash: hash });
       });
 

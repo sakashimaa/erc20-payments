@@ -11,7 +11,7 @@ import { truncateAll } from "../helpers/db";
 import z from "zod";
 import { API_KEY_RE, verifyApiKey } from "../../src/lib/api-keys";
 import { WEBHOOK_SECRET_RE } from "../../src/lib/webhook-secret";
-import { apiKeys, apiKeys, merchants } from "../../src/db/schema";
+import { apiKeys, merchants } from "../../src/db/schema";
 import { and, eq, isNull, not } from "drizzle-orm";
 import { aadFor } from "../../src/lib/crypto";
 
@@ -195,6 +195,19 @@ describe("auth on POST /merchants, /:merchantId/rotate", () => {
 });
 
 describe("POST /:merchantId/rotate", () => {
+  test("404 with unexistent merchant", async () => {
+    const app = createApp(createDeps({ allowInsecureWebhooks: true }));
+
+    const first = await post(
+      app,
+      `/api/merchants/${crypto.randomUUID()}/rotate`,
+      {},
+      TEST_ADMIN_TOKEN,
+    );
+
+    expect(first.status).toBe(404);
+  });
+
   test("successful rotation", async () => {
     const deps = createDeps({ allowInsecureWebhooks: true });
     const app = createApp(deps);
@@ -255,8 +268,8 @@ describe("POST /:merchantId/rotate", () => {
         aadFor(merchant.merchantId, "webhook_secret"),
       ),
     ).toBe(rotated.webhookSecret);
-    expect(await verifyApiKey(rotated.apiKey, validKey!.keyHash));
-    expect(await verifyApiKey(merchant.apiKey, revokedKey!.keyHash));
+    expect(await verifyApiKey(rotated.apiKey, validKey!.keyHash)).toBe(true);
+    expect(await verifyApiKey(merchant.apiKey, revokedKey!.keyHash)).toBe(true);
   });
 });
 

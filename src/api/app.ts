@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { healthRoutes } from "./routes/health";
 import { merchantRoutes } from "./routes/merchant";
 import type { Cipher, Fingerprinter } from "../lib/crypto";
+import { createErrorHandler } from "./middleware/error";
 
 export type AppDeps = {
   db: DB;
@@ -21,6 +22,8 @@ export const createApp = (deps: AppDeps) => {
   const api = new Hono().route("/merchants", merchantRoutes(deps));
 
   app.route("/api", api);
+
+  app.onError(createErrorHandler(deps.logger));
 
   return app;
 };
