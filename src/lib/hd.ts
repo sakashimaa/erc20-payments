@@ -17,12 +17,16 @@ export class InvalidMnemonicError extends Error {
   }
 }
 
-export const xpubFromMnemonic = (mnemonic: string) => {
+export const xpubFromMnemonic = (
+  mnemonic: string,
+  { account = 0, passphrase = "" } = {},
+) => {
   if (!validateMnemonic(mnemonic, english)) throw new InvalidMnemonicError();
 
-  const seed = mnemonicToSeedSync(mnemonic);
+  const seed = mnemonicToSeedSync(mnemonic, passphrase);
 
-  return HDKey.fromMasterSeed(seed).derive("m/44'/60'/0'/0").publicExtendedKey;
+  return HDKey.fromMasterSeed(seed).derive(`m/44'/60'/${account}'/0`)
+    .publicExtendedKey;
 };
 
 export const deriveAddress = (xpub: string, index: number) => {
