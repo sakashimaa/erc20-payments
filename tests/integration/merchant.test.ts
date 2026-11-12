@@ -195,6 +195,20 @@ describe("auth on POST /merchants, /:merchantId/rotate", () => {
 });
 
 describe("POST /:merchantId/rotate", () => {
+  test("400 with invalid uuid", async () => {
+    const app = createApp(createDeps({ allowInsecureWebhooks: true }));
+
+    const first = await post(
+      app,
+      "/api/merchants/spring (love me)/rotate",
+      {},
+      TEST_ADMIN_TOKEN,
+    );
+
+    expect(first.status).toBe(400);
+    await matchObjectJson(first, { error: { code: "validation_error" } });
+  });
+
   test("404 with unexistent merchant", async () => {
     const app = createApp(createDeps({ allowInsecureWebhooks: true }));
 
@@ -206,6 +220,11 @@ describe("POST /:merchantId/rotate", () => {
     );
 
     expect(first.status).toBe(404);
+    await matchObjectJson(first, {
+      error: {
+        code: "not_found",
+      },
+    });
   });
 
   test("successful rotation", async () => {
@@ -229,12 +248,13 @@ describe("POST /:merchantId/rotate", () => {
       TEST_ADMIN_TOKEN,
     );
 
+    expect(second.status).toBe(200);
     const rotated = RotateMerchantResponse.parse(await second.json());
 
     expect(merchant.apiKey).not.toBe(rotated.apiKey);
     expect(merchant.webhookSecret).not.toBe(rotated.webhookSecret);
 
-    const [[merchantDb], [validKey], [revokedKey]] = await Promise.all([
+    const [[merchantDb], keys, [revokedKey]] = await Promise.all([
       deps.db
         .select()
         .from(merchants)
@@ -242,12 +262,7 @@ describe("POST /:merchantId/rotate", () => {
       deps.db
         .select()
         .from(apiKeys)
-        .where(
-          and(
-            eq(apiKeys.merchantId, merchant.merchantId),
-            isNull(apiKeys.revokedAt),
-          ),
-        ),
+        .where(eq(apiKeys.merchantId, merchant.merchantId)),
       deps.db
         .select()
         .from(apiKeys)
@@ -259,8 +274,13 @@ describe("POST /:merchantId/rotate", () => {
         ),
     ]);
 
-    expect(merchantDb).not.toBeNull();
-    expect(validKey).not.toBeNull();
+    expect(merchantDb).toBeDefined();
+    expect(revokedKey).toBeDefined();
+
+    expect(keys).toHaveLength(2);
+
+    const active = keys.filter((k) => k.revokedAt === null);
+    expect(active).toHaveLength(1);
 
     expect(
       await deps.cipher.decrypt(
@@ -268,7 +288,7 @@ describe("POST /:merchantId/rotate", () => {
         aadFor(merchant.merchantId, "webhook_secret"),
       ),
     ).toBe(rotated.webhookSecret);
-    expect(await verifyApiKey(rotated.apiKey, validKey!.keyHash)).toBe(true);
+    expect(await verifyApiKey(rotated.apiKey, active[0]!.keyHash)).toBe(true);
     expect(await verifyApiKey(merchant.apiKey, revokedKey!.keyHash)).toBe(true);
   });
 });

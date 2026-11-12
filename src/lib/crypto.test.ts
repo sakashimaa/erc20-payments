@@ -14,7 +14,7 @@ const keyB64 = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString(
   "base64",
 );
 
-const { encrypt, decrypt } = createCipher(await importDataKey(keyB64));
+const { encrypt, decrypt } = createCipher(await importDataKey(keyB64), 1);
 
 describe("crypto functions", () => {
   test("encrypt/decrypt roundtrip", async () => {
@@ -89,6 +89,7 @@ describe("crypto functions", () => {
 
     const { decrypt: decryptOther } = createCipher(
       await importDataKey(otherKey),
+      1,
     );
 
     expect(decryptOther(encrypted, aad)).rejects.toThrow(DecryptionError);

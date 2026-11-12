@@ -1,9 +1,8 @@
-import type { Context } from "hono";
+import type { ErrorHandler } from "hono";
 import type { AppDeps } from "../app";
 import { HTTPException } from "hono/http-exception";
 import { HttpError } from "../utils/http-error";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import type { HTTPResponseError } from "hono/types";
 import { XpubValidationError } from "../../lib/xpub";
 import {
   InvalidDerivationIndexError,
@@ -19,13 +18,19 @@ const libErrorMap: Array<[ErrorClass, ContentfulStatusCode, string]> = [
   [InvalidMnemonicError, 400, "invalid_mnemonic"],
 ];
 
-export const createErrorHandler = (logger: AppDeps["logger"]) => {
-  return (err: Error | HTTPResponseError, c: Context) => {
+const statusCodes: Partial<Record<number, string>> = {
+  401: "unauthorized",
+  403: "forbidden",
+  404: "not_found",
+};
+
+export const createErrorHandler = (logger: AppDeps["logger"]): ErrorHandler => {
+  return (err, c) => {
     if (err instanceof HTTPException)
       return c.json(
         {
           error: {
-            code: ("message" in err && err.message) || "http_error",
+            code: statusCodes[err.status] || "http_error",
             message: err.message,
           },
         },

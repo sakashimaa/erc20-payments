@@ -22,7 +22,7 @@ const app = createApp({
   logger,
   cipher,
   fingerprinter,
-  allowInsecureWebhooks: env.NODE_ENV !== "production",
+  allowInsecureWebhooks: env.NODE_ENV === "development",
   adminToken: env.ADMIN_TOKEN,
 });
 
