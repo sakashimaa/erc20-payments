@@ -1,6 +1,12 @@
 import z from "zod";
 import { fromError } from "zod-validation-error";
 
+export const base64Key32 = z
+  .base64()
+  .refine((s) => Buffer.from(s, "base64").length === 32, {
+    message: "must decode to exactly 32 bytes",
+  });
+
 export const baseEnvSchema = z.object({
   NODE_ENV: z
     .enum(["production", "development", "test"])
@@ -11,6 +17,12 @@ export const baseEnvSchema = z.object({
   POSTGRES_DB: z.string().min(1),
   POSTGRES_HOST: z.string().default("localhost"),
   POSTGRES_PORT: z.coerce.number().default(5433),
+
+  DATA_ENC_KEY: base64Key32,
+  DATA_ENC_KEY_VERSION: z.coerce.number().int().positive(),
+
+  XPUB_FINGERPRINT_KEY: base64Key32,
+  ADMIN_TOKEN: z.string().min(32),
 });
 
 type BaseEnv = z.infer<typeof baseEnvSchema>;

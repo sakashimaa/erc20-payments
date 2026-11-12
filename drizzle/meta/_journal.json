@@ -5,15 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1793076950378,
-      "tag": "0000_flashy_phalanx",
+      "when": 1794107399260,
+      "tag": "0000_foamy_wolverine",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1793233659813,
-      "tag": "0001_bouncy_longshot",
+      "when": 1794189829480,
+      "tag": "0001_quiet_ego",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794189860860,
+      "tag": "0002_blue_sir_ram",
       "breakpoints": true
     }
   ]

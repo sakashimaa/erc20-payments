@@ -1,6 +1,6 @@
 {
-  "id": "1ced5a76-8afd-461a-be85-a6a68bf3c950",
-  "prevId": "857c1d41-6ca2-4053-bc07-4cfd02099c3c",
+  "id": "eec5616d-feea-479e-b082-8a638e5db157",
+  "prevId": "b2b1f6c1-4dc3-4ab5-a5b0-677bfa04afd1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -337,6 +337,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "xpub_fingerprint": {
+          "name": "xpub_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "xpub_enc": {
           "name": "xpub_enc",
           "type": "bytea",
@@ -367,7 +373,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "merchants_xpubFingerprint_unique": {
+          "name": "merchants_xpubFingerprint_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "xpub_fingerprint"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

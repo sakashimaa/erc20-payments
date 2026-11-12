@@ -1,13 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { createApp } from "../../src/api/app";
-import { db } from "../../src/db";
-import { logger } from "../../src/lib/logger";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { createDeps } from "../helpers/deps";
 
 describe("GET /health", () => {
   test("healthy db 200 HTTP code", async () => {
-    const app = createApp({ db, logger });
+    const app = createApp(createDeps());
 
     const res = await app.request("/health");
     expect(res.status).toBe(200);
@@ -18,7 +17,7 @@ describe("GET /health", () => {
       max: 1,
       connect_timeout: 1,
     });
-    const app = createApp({ db: drizzle(dead), logger });
+    const app = createApp(createDeps({ db: drizzle(dead) }));
 
     const res = await app.request("/health");
     expect(res.status).toBe(503);

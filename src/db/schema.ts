@@ -60,6 +60,7 @@ export const merchants = pgTable("merchants", {
   webhookSecretEnc: bytea().notNull() /* iv(12) || ciphertext || tag */,
   webhookSecretEncVersion: integer().notNull(),
 
+  xpubFingerprint: text().notNull().unique("merchants_xpub_fingerprint_key"),
   xpubEnc: bytea().notNull() /* iv(12) || ciphertext || tag */,
   xpubEncVersion: integer().notNull(),
 
@@ -192,5 +193,6 @@ export const webhookEvents = pgTable(
 );
 
 export type InsertMerchant = typeof merchants.$inferInsert;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type InsertTransfer = typeof transfers.$inferInsert;

@@ -12,6 +12,12 @@ CREATE TABLE "api_keys" (
 	CONSTRAINT "api_keys_prefix_unique" UNIQUE("prefix")
 );
 --> statement-breakpoint
+CREATE TABLE "chain_cursors" (
+	"chain_id" integer PRIMARY KEY NOT NULL,
+	"last_processed_block" bigint NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "invoices" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"merchant_id" uuid NOT NULL,
@@ -36,10 +42,12 @@ CREATE TABLE "merchants" (
 	"webhook_url" text NOT NULL,
 	"webhook_secret_enc" "bytea" NOT NULL,
 	"webhook_secret_enc_version" integer NOT NULL,
+	"xpub_fingerprint" text NOT NULL,
 	"xpub_enc" "bytea" NOT NULL,
 	"xpub_enc_version" integer NOT NULL,
 	"next_derivation_index" integer DEFAULT 0 NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "merchants_xpubFingerprint_unique" UNIQUE("xpub_fingerprint")
 );
 --> statement-breakpoint
 CREATE TABLE "transfers" (
@@ -78,6 +86,7 @@ ALTER TABLE "webhook_events" ADD CONSTRAINT "webhook_events_invoice_id_invoices_
 CREATE UNIQUE INDEX "idx_invoices_merchant_id_merchant_order_id" ON "invoices" USING btree ("merchant_id","merchant_order_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_invoices_merchant_id_derivation_index" ON "invoices" USING btree ("merchant_id","derivation_index");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_invoices_chain_id_address" ON "invoices" USING btree ("chain_id","address");--> statement-breakpoint
+CREATE UNIQUE INDEX "idx_merchants_xpub_fingerprint" ON "merchants" USING btree ("xpub_fingerprint");--> statement-breakpoint
 CREATE INDEX "idx_transfers_invoice_id" ON "transfers" USING btree ("invoice_id");--> statement-breakpoint
 CREATE INDEX "idx_transfers_chain_id_block_number" ON "transfers" USING btree ("chain_id","block_number");--> statement-breakpoint
 CREATE UNIQUE INDEX "idx_transfers_chain_id_tx_hash_log_index" ON "transfers" USING btree ("chain_id","tx_hash","log_index");--> statement-breakpoint
