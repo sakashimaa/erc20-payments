@@ -6,10 +6,10 @@ To install dependencies:
 bun install
 ```
 
-To run:
+To run API:
 
 ```bash
-bun run index.ts
+bun run dev:api
 ```
 
 ## Merchant Xpub export CLI, how to build and run
