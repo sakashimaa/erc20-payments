@@ -80,4 +80,42 @@ describe("export-xpub CLI", () => {
       expect(result).toMatchObject({ exitCode: 1, stdout: "" });
     },
   );
+
+  test("--json gives machine-readable output", async () => {
+    const [text, json] = await Promise.all([
+      runOk([], STDIN),
+      run(["--json"], STDIN),
+    ]);
+
+    expect(json.exitCode).toBe(0);
+    expect(json.stderr).toBe("");
+    expect(JSON.parse(json.stdout)).toEqual({
+      xpub: text.xpub,
+      firstAddress: ANVIL.addresses[0],
+    });
+  });
+
+  test("invalid mnemonic gives error and dont leak input", async () => {
+    const corrupted = ANVIL.mnemonic.replace(/junk$/, "gestalt");
+    const { stdout, stderr, exitCode } = await run([], corrupted + "\n");
+
+    expect(stdout).toBe("");
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("invalid mnemonic passed");
+    expect(stderr).not.toContain("gestalt");
+  });
+
+  test("invalid flag gives error", async () => {
+    const result = await run(["--tewiq"], STDIN);
+
+    expect(result).toMatchObject({ exitCode: 1, stdout: "" });
+  });
+
+  test("--help prints info to stdout and exits with 0", async () => {
+    const { stdout, stderr, exitCode } = await run(["--help"], "");
+
+    expect(stderr).toBe("");
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain("Usage: export-xpub");
+  });
 });

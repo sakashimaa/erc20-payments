@@ -30,10 +30,6 @@ Examples:
 
 Exit codes: 0 success, 1 invalid input or error`;
 
-if (process.stdin.isTTY) {
-  console.error("Enter mnemonic, then CTRL + D");
-}
-
 let args;
 try {
   args = parseArgs({
@@ -47,9 +43,9 @@ try {
   });
 } catch (e) {
   if (e instanceof Error) console.error(e.message);
-  else console.log("unknown error", e);
+  else console.error("unknown error", e);
 
-  console.log("see --help");
+  console.error("see --help");
   process.exit(1);
 }
 
@@ -59,6 +55,10 @@ const { help, account } = values;
 if (help) {
   console.log(HELP);
   process.exit(0);
+}
+
+if (process.stdin.isTTY) {
+  console.error("Enter mnemonic, then CTRL + D");
 }
 
 const input = await Bun.stdin.text();
@@ -89,9 +89,14 @@ try {
     account: accountParsed,
     passphrase,
   });
+  const firstAddress = deriveAddress(xpub, 0);
 
-  console.log(`xpub: ${xpub}`);
-  console.log(`first address: ${deriveAddress(xpub, 0)}`);
+  if (values.json) {
+    console.log(JSON.stringify({ xpub, firstAddress }));
+  } else {
+    console.log(`xpub: ${xpub}`);
+    console.log(`first address: ${firstAddress}`);
+  }
 } catch (e) {
   if (e instanceof InvalidMnemonicError) {
     console.error("invalid mnemonic passed");
