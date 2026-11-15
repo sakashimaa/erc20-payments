@@ -5,6 +5,7 @@ import { healthRoutes } from "./routes/health";
 import { merchantRoutes } from "./routes/merchant";
 import type { Cipher, Fingerprinter } from "../lib/crypto";
 import { createErrorHandler } from "./middleware/error";
+import { invoiceRoutes } from "./routes/invoice";
 
 export type AppDeps = {
   db: DB;
@@ -19,7 +20,9 @@ export const createApp = (deps: AppDeps) => {
   const app = new Hono();
   app.route("/", healthRoutes(deps));
 
-  const api = new Hono().route("/merchants", merchantRoutes(deps));
+  const api = new Hono()
+    .route("/merchants", merchantRoutes(deps))
+    .route("/invoices", invoiceRoutes(deps));
 
   app.route("/api", api);
 
