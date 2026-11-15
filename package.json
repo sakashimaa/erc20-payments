@@ -15,7 +15,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "cli:xpub": "bun src/cli/export-xpub.ts",
+    "cli:build": "bun build src/cli/export-xpub.ts --compile --outfile dist/export-xpub"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
