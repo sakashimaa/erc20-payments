@@ -22,9 +22,6 @@ export const requireApiKey = ({ db }: AppDeps) =>
     if (!apiKey || !(await verifyApiKey(token, apiKey.keyHash)))
       throw new UnauthorizedError("invalid auth token");
 
-    if (!verifyApiKey(token, apiKey.keyHash))
-      throw new UnauthorizedError("invalid auth token");
-
     c.set("merchantId", apiKey.merchantId);
     await next();
   });
