@@ -24,6 +24,7 @@ const app = createApp({
   fingerprinter,
   allowInsecureWebhooks: env.NODE_ENV === "development",
   adminToken: env.ADMIN_TOKEN,
+  supportedChainIds: env.SUPPORTED_CHAIN_IDS,
 });
 
 export default {

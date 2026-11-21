@@ -22,6 +22,11 @@ export const requireApiKey = ({ db }: AppDeps) =>
     if (!apiKey || !(await verifyApiKey(token, apiKey.keyHash)))
       throw new UnauthorizedError("invalid auth token");
 
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.id, apiKey.id));
     c.set("merchantId", apiKey.merchantId);
+
     await next();
   });

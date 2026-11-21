@@ -6,6 +6,7 @@ import { merchantRoutes } from "./routes/merchant";
 import type { Cipher, Fingerprinter } from "../lib/crypto";
 import { createErrorHandler } from "./middleware/error";
 import { invoiceRoutes } from "./routes/invoice";
+import { bodyLimit } from "hono/body-limit";
 
 export type AppDeps = {
   db: DB;
@@ -14,6 +15,7 @@ export type AppDeps = {
   fingerprinter: Fingerprinter;
   allowInsecureWebhooks: boolean;
   adminToken: string;
+  supportedChainIds: ReadonlySet<number>;
 };
 
 export const createApp = (deps: AppDeps) => {
@@ -24,6 +26,22 @@ export const createApp = (deps: AppDeps) => {
     .route("/merchants", merchantRoutes(deps))
     .route("/invoices", invoiceRoutes(deps));
 
+  app.use(
+    "/api/*",
+    bodyLimit({
+      maxSize: 32 * 1024,
+      onError: (c) =>
+        c.json(
+          {
+            error: {
+              code: "payload_too_large",
+              message: "json payload is too big",
+            },
+          },
+          413,
+        ),
+    }),
+  );
   app.route("/api", api);
 
   app.onError(createErrorHandler(deps.logger));
