@@ -2,7 +2,7 @@ import { mnemonicToSeedSync } from "@scure/bip39";
 import { ANVIL } from "../fixtures/wallets";
 import { HDKey } from "viem/accounts";
 
-interface CreateMerchantBody {
+export interface CreateMerchantBody {
   name: string;
   webhookUrl: string;
   xpub: string;
