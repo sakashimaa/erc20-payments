@@ -12,6 +12,8 @@ const key = (fill: number) => Buffer.alloc(32, fill).toString("base64");
 
 export const TEST_ADMIN_TOKEN = "test-admin-token-0123456789abcdef0123456789";
 
+const supportedChainIds = new Set([11155111, 84532, 31337]);
+
 const cipher = createCipher(await importDataKey(key(1)), 1);
 const fingerprinter = createFingerprinter(await importHmacKey(key(2)));
 
@@ -22,5 +24,6 @@ export const createDeps = (overrides: Partial<AppDeps> = {}): AppDeps => ({
   fingerprinter,
   allowInsecureWebhooks: false,
   adminToken: TEST_ADMIN_TOKEN,
+  supportedChainIds,
   ...overrides,
 });

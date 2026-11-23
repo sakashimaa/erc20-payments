@@ -8,16 +8,18 @@ import { createApp } from "../../src/api/app";
 import { createDeps, TEST_ADMIN_TOKEN } from "../helpers/deps";
 import { matchObjectJson, post } from "../helpers/api";
 import { truncateAll } from "../helpers/db";
-import z from "zod";
-import { API_KEY_RE, verifyApiKey } from "../../src/lib/api-keys";
-import { WEBHOOK_SECRET_RE } from "../../src/lib/webhook-secret";
+import { verifyApiKey } from "../../src/lib/api-keys";
 import { apiKeys, merchants } from "../../src/db/schema";
 import { and, eq, isNull, not } from "drizzle-orm";
 import { aadFor } from "../../src/lib/crypto";
+import {
+  CreateMerchantResponse,
+  RotateMerchantResponse,
+} from "../schemas/merchant";
+import { validMerchantBody } from "../helpers/merchant";
 
 const b58 = createBase58check(sha256);
 const XPUB_BYTES = 78;
-const webhookUrl = "http://localhost:3001/api/webhooks/erc20-payments";
 
 const tamperParentFingerprint = (xpub: string) => {
   const bytes = b58.decode(xpub);
@@ -34,32 +36,7 @@ const node = root.derive("m/44'/60'/0'/0");
 
 const xpub = node.publicExtendedKey;
 
-const valid = {
-  name: "yokoshima",
-  webhookUrl,
-  xpub,
-  firstAddress: ANVIL.addresses[0],
-};
-
-const apiKeySchema = z.string().regex(API_KEY_RE, "invalid apiKey format");
-const webhookSecretSchema = z
-  .string()
-  .regex(WEBHOOK_SECRET_RE, "invalid webhookSecret format");
-
-const CreateMerchantResponse = z
-  .object({
-    merchantId: z.uuid(),
-    apiKey: apiKeySchema,
-    webhookSecret: webhookSecretSchema,
-  })
-  .strict();
-
-const RotateMerchantResponse = z
-  .object({
-    apiKey: apiKeySchema,
-    webhookSecret: webhookSecretSchema,
-  })
-  .strict();
+const valid = validMerchantBody({ xpub });
 
 beforeEach(async () => {
   await truncateAll();

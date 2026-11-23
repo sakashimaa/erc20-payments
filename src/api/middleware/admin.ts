@@ -1,27 +1,13 @@
 import { createMiddleware } from "hono/factory";
 import { safeEqual } from "../../lib/api-keys";
+import { invalidToken } from "./merchant";
+import { parseAuthToken } from "../utils/api";
+import { UnauthorizedError } from "../utils/http-error";
 
 export const requireAdmin = (adminToken: string) =>
   createMiddleware(async (c, next) => {
-    const authHeader = c.req.header("Authorization");
-
-    if (!authHeader || !authHeader.startsWith("Bearer "))
-      return c.json(
-        {
-          error: { code: "unauthorized", message: "invalid header format" },
-        },
-        401,
-      );
-
-    const token = authHeader.slice("Bearer ".length);
-
-    if (!safeEqual(token, adminToken))
-      return c.json(
-        {
-          error: { code: "unauthorized", message: "invalid token" },
-        },
-        401,
-      );
+    if (!safeEqual(parseAuthToken(c), adminToken))
+      throw new UnauthorizedError("invalid auth token");
 
     await next();
   });

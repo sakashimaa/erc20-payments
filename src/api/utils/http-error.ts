@@ -21,3 +21,9 @@ export class ValidationError extends HttpError {
     super(400, message, "validation_error", issues, options);
   }
 }
+
+export class UnauthorizedError extends HttpError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(401, message, "unauthorized", undefined, options);
+  }
+}
