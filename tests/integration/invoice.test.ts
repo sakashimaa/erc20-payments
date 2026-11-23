@@ -17,7 +17,9 @@ import type { Hono } from "hono";
 import { maxUint256 } from "viem";
 import { CreateInvoiceResponse } from "../schemas/invoice";
 import { invoices, merchants } from "../../src/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
+import { xpubFromMnemonic } from "../../src/lib/hd";
+import { MERCHANT } from "../fixtures/wallets";
 
 beforeEach(async () => {
   await truncateAll();
@@ -181,6 +183,131 @@ describe("POST /invoices", () => {
     expect(x?.address).not.toBe(y?.address);
     expect(x?.address).not.toBe(z?.address);
     expect(y?.address).not.toBe(z?.address);
+  });
+
+  test("merchantOrderId same merchant duplication -> 409", async () => {
+    const deps = createDeps({ allowInsecureWebhooks: true });
+    const app = createApp(deps);
+
+    const { apiKey } = await createMerchant(app, deps);
+    const merchantOrderId = crypto.randomUUID();
+    const first = await post(
+      app,
+      "/api/invoices",
+      { ...validInvoice(deps, { merchantOrderId }) },
+      apiKey,
+    );
+
+    expect(first.status).toBe(201);
+
+    const second = await post(
+      app,
+      "/api/invoices",
+      {
+        ...validInvoice(deps, { merchantOrderId }),
+      },
+      apiKey,
+    );
+
+    expect(second.status).toBe(409);
+
+    const { error } = HttpErrorResponseSchema.parse(await second.json());
+    expect(error.code).toBe("merchant_order_registered");
+    expect(error.message).toMatch(/order id already registered/);
+  });
+
+  test("merchantOrderId different merchants duplication -> 201", async () => {
+    const deps = createDeps({ allowInsecureWebhooks: true });
+    const app = createApp(deps);
+
+    const { apiKey: firstApiKey, merchantId: firstMerchantId } =
+      await createMerchant(app, deps);
+    const { apiKey: secondApiKey, merchantId: secondMerchantId } =
+      await createMerchant(app, deps, {
+        xpub: xpubFromMnemonic(MERCHANT.mnemonic),
+        firstAddress: MERCHANT.addresses[0],
+      });
+    const merchantOrderId = crypto.randomUUID();
+
+    const [first, second] = await Promise.all([
+      post(
+        app,
+        "/api/invoices",
+        { ...validInvoice(deps, { merchantOrderId }) },
+        firstApiKey,
+      ),
+      post(
+        app,
+        "/api/invoices",
+        {
+          ...validInvoice(deps, { merchantOrderId }),
+        },
+        secondApiKey,
+      ),
+    ]);
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+
+    const [[firstInvoice], [secondInvoice]] = await Promise.all([
+      deps.db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.merchantId, firstMerchantId)),
+      deps.db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.merchantId, secondMerchantId)),
+    ]);
+
+    expect(firstInvoice?.derivationIndex).toBe(0);
+    expect(secondInvoice?.derivationIndex).toBe(0);
+    expect(firstInvoice?.address).not.toBe(secondInvoice?.address);
+    expect(firstInvoice?.merchantId).not.toBe(secondInvoice?.merchantId);
+  });
+
+  test("concurrency test with multiple requests", async () => {
+    const deps = createDeps({ allowInsecureWebhooks: true });
+    const app = createApp(deps);
+
+    const { apiKey, merchantId } = await createMerchant(app, deps);
+    const n = 10;
+    const orderIds = Array.from({ length: n }, () => crypto.randomUUID());
+
+    const responses = await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/await-thenable
+      orderIds.map((merchantOrderId) =>
+        post(
+          app,
+          "/api/invoices",
+          validInvoice(deps, { merchantOrderId }),
+          apiKey,
+        ),
+      ),
+    );
+
+    expect(responses.map((r) => r.status)).toEqual(Array(n).fill(201));
+
+    const [rows, [m]] = await Promise.all([
+      deps.db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.merchantId, merchantId))
+        .orderBy(asc(invoices.derivationIndex)),
+      deps.db.select().from(merchants).where(eq(merchants.id, merchantId)),
+    ]);
+    if (!m) throw new Error("merchant not found");
+
+    expect(rows).toHaveLength(n);
+    expect(rows.map((r) => r.derivationIndex)).toEqual(
+      Array.from({ length: n }, (_, i) => i),
+    );
+    expect(m.nextDerivationIndex).toBe(n);
+
+    expect(new Set(rows.map((r) => r.address)).size).toBe(n);
+    expect(new Set(rows.map((r) => r.merchantOrderId))).toEqual(
+      new Set(orderIds),
+    );
   });
 });
 
