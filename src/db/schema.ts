@@ -196,3 +196,4 @@ export type InsertMerchant = typeof merchants.$inferInsert;
 export type InsertApiKey = typeof apiKeys.$inferInsert;
 export type InsertInvoice = typeof invoices.$inferInsert;
 export type InsertTransfer = typeof transfers.$inferInsert;
+export type InsertCursor = typeof chainCursors.$inferInsert;

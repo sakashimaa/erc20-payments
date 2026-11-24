@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "cli:xpub": "bun src/cli/export-xpub.ts",
-    "cli:build": "bun build src/cli/export-xpub.ts --compile --outfile dist/export-xpub"
+    "cli:build": "bun build src/cli/export-xpub.ts --compile --outfile dist/export-xpub",
+    "watcher": "bun src/watcher/index.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
