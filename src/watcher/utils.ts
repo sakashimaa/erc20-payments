@@ -2,9 +2,10 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { WatcherDeps } from ".";
 import { chainCursors, invoices, type InsertCursor } from "../db/schema";
 import type { ChainClient } from "./config";
+import type { DB, Tx } from "../db";
 
-export const setCursor = async ({ db }: WatcherDeps, data: InsertCursor) => {
-  const [inserted] = await db
+export const setCursor = async (data: InsertCursor, executor: DB | Tx) => {
+  const [inserted] = await executor
     .insert(chainCursors)
     .values(data)
     .onConflictDoUpdate({
