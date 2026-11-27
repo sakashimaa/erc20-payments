@@ -61,7 +61,7 @@ const CHAIN_REGISTRY: Record<number, ChainConfig> = {
   },
   [foundry.id]: {
     chain: foundry,
-    confirmations: 1n,
+    confirmations: 3n,
     maxBlockRange: 100_000n,
     pollIntervalMs: 500,
   },

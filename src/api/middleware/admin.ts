@@ -1,6 +1,5 @@
 import { createMiddleware } from "hono/factory";
 import { safeEqual } from "../../lib/api-keys";
-import { invalidToken } from "./merchant";
 import { parseAuthToken } from "../utils/api";
 import { UnauthorizedError } from "../utils/http-error";
 

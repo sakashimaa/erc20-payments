@@ -1,8 +1,8 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { WatcherDeps } from ".";
 import { chainCursors, invoices, type InsertCursor } from "../db/schema";
-import type { ChainClient } from "./config";
 import type { DB, Tx } from "../db";
+import { parseRpcUrls } from "../config/watcher-env";
+import type { WatcherDeps } from "./processor";
 
 export const setCursor = async (data: InsertCursor, executor: DB | Tx) => {
   const [inserted] = await executor
@@ -18,17 +18,38 @@ export const setCursor = async (data: InsertCursor, executor: DB | Tx) => {
   return inserted;
 };
 
+export const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+
 export const obtainStartBlock = async (
   { db }: WatcherDeps,
-  { chainId, client }: { chainId: number; client: ChainClient },
+  chainId: number,
+  latestBlock: bigint,
 ) => {
   const [cursor] = await db
     .select()
     .from(chainCursors)
     .where(eq(chainCursors.chainId, chainId));
-  if (!cursor) return (await client.getBlockNumber()) - 1n;
 
-  return cursor.lastProcessedBlock;
+  if (!cursor) return latestBlock;
+  return cursor.lastProcessedBlock + 1n;
 };
 
 export const getPendingInvoicesOnChain = async (
@@ -47,6 +68,17 @@ export const getPendingInvoicesOnChain = async (
 
 export const preflight = async ({ runtimes }: WatcherDeps) => {
   if (runtimes.size === 0) throw new Error("no chains configured");
+
+  const fromEnv = parseRpcUrls(process.env);
+  const missingInRuntimes = [...fromEnv.keys()].filter(
+    (id) => !runtimes.has(id),
+  );
+  const missingInEnv = [...runtimes.keys()].filter((id) => !fromEnv.has(id));
+
+  if (missingInRuntimes.length > 0 || missingInEnv.length > 0)
+    throw new Error(
+      `RPC/Runtime mismatch. Missing in env: ${missingInEnv.join(", ")}. Missing in runtimes: ${missingInRuntimes.join(", ")}`,
+    );
 
   await Promise.all(
     Array.from(runtimes.entries()).map(
