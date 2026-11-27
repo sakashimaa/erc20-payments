@@ -50,7 +50,7 @@ const CHAIN_REGISTRY: Record<number, ChainConfig> = {
   [sepolia.id]: {
     chain: sepolia,
     confirmations: 3n,
-    maxBlockRange: 1_000n,
+    maxBlockRange: 10n,
     pollIntervalMs: 12_000,
   },
   [baseSepolia.id]: {
