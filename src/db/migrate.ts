@@ -1,9 +1,10 @@
+import { fileURLToPath } from "node:url";
 import postgres from "postgres";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { logger } from "../lib/logger.js";
 
-const MIGRATIONS_FOLDER = new URL("../../drizzle", import.meta.url).pathname;
+const MIGRATIONS_FOLDER = fileURLToPath(new URL("../../drizzle", import.meta.url));
 
 export const runMigrations = async (databaseUrl: string) => {
   const client = postgres(databaseUrl, { max: 1 });
